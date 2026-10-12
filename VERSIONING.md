@@ -47,17 +47,24 @@ Removido botÃ£o Jogo no cabeÃ§alho; Blender abre o executÃ¡vel configurado. OpÃ§
 ValidaÃ§Ã£o: build e self-test passaram. Testes reais de modelo, animaÃ§Ã£o, montagem, textura e Ã¡udio em reports/update-0716-test.json. Retomada verificada pulando tanto resultados concluÃ­dos quanto falhas; varredura completa iniciada apÃ³s os testes, sem declarar todos os assets compatÃ­veis.
 
 ## 0.7.17
-- Corrigida interrupção da varredura ao substituir progress.json bloqueado: tentativas assíncronas, registro do erro e continuação preservando o histórico.
-- Validação: varredura de três assets com progress.json bloqueado concluiu com código 0 e gravou os três registros no histórico; self-test aprovado.
+- Corrigida interrupï¿½ï¿½o da varredura ao substituir progress.json bloqueado: tentativas assï¿½ncronas, registro do erro e continuaï¿½ï¿½o preservando o histï¿½rico.
+- Validaï¿½ï¿½o: varredura de trï¿½s assets com progress.json bloqueado concluiu com cï¿½digo 0 e gravou os trï¿½s registros no histï¿½rico; self-test aprovado.
 
 ## 0.7.18
-- Animações da varredura usam reports/catalog-scan/work/animation, fora da limpeza de previews. Limpeza compartilhada preserva prévias usadas por outra instância do projeto. Clique no status copia o texto completo.
-- Validação: self-test aprovado; BlackDragon Idle convertido pelo scan-server e arquivo confirmado em reports/catalog-scan/work/animation/animation-0.json.
+- Animaï¿½ï¿½es da varredura usam reports/catalog-scan/work/animation, fora da limpeza de previews. Limpeza compartilhada preserva prï¿½vias usadas por outra instï¿½ncia do projeto. Clique no status copia o texto completo.
+- Validaï¿½ï¿½o: self-test aprovado; BlackDragon Idle convertido pelo scan-server e arquivo confirmado em reports/catalog-scan/work/animation/animation-0.json.
 
 ## 0.7.19
-- Catálogo, configurações, retomada/progresso, diagnósticos e etapas intermediárias compactados em DAT. Migração de formatos antigos verificada antes de remover os originais. Prévias nativas extraídas apenas enquanto necessárias ao Viewer/fila e descartadas ao fechar.
-- Falhas de abertura de cache limpam dados do asset e tentam nova leitura uma vez; subcategorias manuais preservadas e arquivo DAT corrompido guardado para recuperação.
+- Catï¿½logo, configuraï¿½ï¿½es, retomada/progresso, diagnï¿½sticos e etapas intermediï¿½rias compactados em DAT. Migraï¿½ï¿½o de formatos antigos verificada antes de remover os originais. Prï¿½vias nativas extraï¿½das apenas enquanto necessï¿½rias ao Viewer/fila e descartadas ao fechar.
+- Falhas de abertura de cache limpam dados do asset e tentam nova leitura uma vez; subcategorias manuais preservadas e arquivo DAT corrompido guardado para recuperaï¿½ï¿½o.
 
 ## 0.7.20
 - Limpeza de distribuicoes antigas e ferramentas sem uso. Compilacao atualiza apenas o executavel principal na raiz.
 - Preparacao do repositorio privado com fontes e licencas; cache e assets locais excluidos do Git.
+
+## 0.7.21
+- Release em executavel unico, com runtime, conversor, ferramentas, mapping e biblioteca inicial compactados internamente.
+- Dados persistentes em LocalAppData; seed portavel validado por mapping/UTOC/UCAS e mesclado preservando tipos locais e subcategorias.
+- Testes e resultados registrados apos validar o pacote isolado.
+
+- Validacao: EXE isolado/self-test, portabilidade e mescla do cache, miniatura preservada, viewer Balgest, montagem BlackDragon, WAV Wwise e BLEND Balgest salvo/reaberto com 95 ossos, 240 quadros, 2 malhas e 1 imagem. SW_Fly_Aerial_Sound continua sem midia reproduzivel reconhecida.

@@ -2,13 +2,13 @@
 
 Aplicativo Windows WPF para pesquisar assets locais do Aion 2, visualizar modelos, texturas e animacoes, reproduzir audio reconhecido e exportar para Blender.
 
-Versao atual: **0.7.20**. React/Tauri nao e a interface ativa.
+Versao atual: **0.7.21**. React/Tauri nao e a interface ativa.
 
 ## Executar
 
 Abra `Aion2Porting.exe` na raiz. Em **Opcoes**, configure a instalacao do jogo, Blender, pasta de exportacao e idioma (PT-BR ou ingles). A instalacao do jogo e consultada apenas para leitura.
 
-O viewer pode testar modelos, animacoes e montagens. Tipos confirmados, subcategorias manuais, miniaturas e perfis de esqueleto ficam em `cache/*.dat`. O cache e as exportacoes sao locais e nao fazem parte deste repositorio. A preparacao para FiveM requer trabalho posterior no Blender; o programa nao garante compatibilidade geral de todos os assets.
+O viewer pode testar modelos, animacoes e montagens. Tipos confirmados, subcategorias manuais, miniaturas e perfis de esqueleto ficam em `%LOCALAPPDATA%\Aion2Porting\cache\*.dat` no release (ou `cache/*.dat` no desenvolvimento). O EXE do release inclui componentes e cache inicial; os dados editaveis continuam locais. O cache e as exportacoes sao locais e nao fazem parte deste repositorio. A preparacao para FiveM requer trabalho posterior no Blender; o programa nao garante compatibilidade geral de todos os assets.
 
 ## Compilar
 

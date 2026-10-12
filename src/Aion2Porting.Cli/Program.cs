@@ -16,11 +16,13 @@ using CUE4Parse_Conversion.Animations;
 using CUE4Parse_Conversion.Sounds;
 
 var root = Environment.GetEnvironmentVariable("AION2_ROOT") ?? Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../"));
+root=Path.GetFullPath(root);
+var supportRoot=Environment.GetEnvironmentVariable("AION2_SUPPORT_ROOT")??root;
 Directory.SetCurrentDirectory(root);
 var exportRoot = Environment.GetEnvironmentVariable("AION2_EXPORT_ROOT") ?? Path.Combine(root, "exports");
 var game = Environment.GetEnvironmentVariable("AION2_GAME_DIR") ?? @"C:\Program Files (x86)\Steam\steamapps\common\AION2\Aion2\Content\Paks";
 var chunk = args.Length > 3 ? args[3] : "pakchunk30100-Windows_0_P.utoc";
-var mapping = Path.Combine(root, "mappings/AION2-5.3.2.0-1.0.52.0.usmap");
+var mapping = Path.Combine(supportRoot, "mappings/AION2-5.3.2.0-1.0.52.0.usmap");
 var mode = args.FirstOrDefault() ?? "inventory";
 if(mode=="animation-sampling-test"){
     var result=JsonSerializer.Serialize(AnimationSamplingTests.Run());
@@ -53,7 +55,7 @@ if (args.Length > 4)
 var records = new List<object>();
 try
 {
-    await OodleHelper.InitializeAsync(Path.Combine(root, "tools", OodleHelper.OodleFileName));
+    await OodleHelper.InitializeAsync(Path.Combine(supportRoot, "tools", OodleHelper.OodleFileName));
     using var provider = new DefaultFileProvider(game, SearchOption.TopDirectoryOnly,
         new VersionContainer(EGame.GAME_Aion2), StringComparer.OrdinalIgnoreCase);
     provider.MappingsContainer = new FileUsmapTypeMappingsProvider(mapping);
@@ -64,7 +66,7 @@ try
     if(mode=="scan-server") {
         Directory.Delete(run,true);
         System.Runtime.InteropServices.NativeLibrary.SetDllImportResolver(typeof(CUE4Parse.ACL.ACLNative).Assembly,
-            (name,assembly,search)=>name=="CUE4Parse-Natives"?System.Runtime.InteropServices.NativeLibrary.Load(Path.Combine(root,"tools","CUE4Parse-Natives.dll")):IntPtr.Zero);
+            (name,assembly,search)=>name=="CUE4Parse-Natives"?System.Runtime.InteropServices.NativeLibrary.Load(Path.Combine(supportRoot,"tools","CUE4Parse-Natives.dll")):IntPtr.Zero);
         Console.WriteLine("SCAN_READY");Console.Out.Flush();
         while(Console.ReadLine() is string request) {
             var current=Path.Combine(root,"reports","catalog-scan","work");
@@ -89,7 +91,7 @@ try
     }
     if(mode is "animation-probe" or "animation") {
         System.Runtime.InteropServices.NativeLibrary.SetDllImportResolver(typeof(CUE4Parse.ACL.ACLNative).Assembly,
-            (name,assembly,search)=>name=="CUE4Parse-Natives"?System.Runtime.InteropServices.NativeLibrary.Load(Path.Combine(root,"tools","CUE4Parse-Natives.dll")):IntPtr.Zero);
+            (name,assembly,search)=>name=="CUE4Parse-Natives"?System.Runtime.InteropServices.NativeLibrary.Load(Path.Combine(supportRoot,"tools","CUE4Parse-Natives.dll")):IntPtr.Zero);
         var package=provider.LoadPackage(provider.Files[filter]);
         foreach(var lazy in package.ExportsLazy) {
             if(lazy.Value is not CUE4Parse.UE4.Assets.Exports.Animation.UAnimationAsset animation)continue;

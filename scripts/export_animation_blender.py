@@ -3,6 +3,7 @@ import bpy
 import json
 import math
 import sys
+import os
 from pathlib import Path
 from mathutils import Matrix, Quaternion, Vector
 
@@ -10,7 +11,7 @@ args = sys.argv[sys.argv.index('--') + 1:]
 source, output = map(lambda p: Path(p).resolve(), args[:2])
 model = Path(args[2]).resolve() if len(args) > 2 and args[2] else None
 asset_root = Path(args[3]).resolve() if len(args) > 3 and args[3] else (model.parent if model else None)
-root = Path(__file__).resolve().parent.parent
+root = Path(os.environ.get("AION2_ROOT", Path(__file__).resolve().parent.parent)).resolve()
 if not output.is_relative_to(root / 'exports'):
     raise ValueError('Output must be inside project exports')
 if source.stat().st_size > 64 * 1024 * 1024:

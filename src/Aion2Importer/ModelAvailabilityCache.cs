@@ -48,6 +48,36 @@ public sealed class ModelAvailabilityCache {
                 });
             }
         }catch(Exception ex){unreadable=true;Warning="Não foi possível ler o cache: "+ex.Message;}
+        if(!unreadable)ImportSeed(mapping);
+    }
+    public void ImportSeed(string mapping,string? seedFile=null) {
+        if(seedFile==null&&ReleaseRuntime.SupportRoot==null)return;
+        seedFile??=ReleaseRuntime.Support(file,"seed","library.dat");
+        if(!File.Exists(seedFile))return;
+        try {
+            using var zip=ZipFile.OpenRead(seedFile);
+            using var stream=zip.GetEntry("seed.json")!.Open();
+            var seed=JsonSerializer.Deserialize<LibrarySeed.Manifest>(stream)!;
+            if(seed.Version!=1||seed.Mapping!=LibrarySeed.Hash(mapping))return;
+            var matched=new Dictionary<string,bool>(StringComparer.OrdinalIgnoreCase);
+            var images=new List<(string From,string To)>();bool changed=false;
+            foreach(var record in seed.Records) {
+                var e=record.Type;var asset=new Asset{Path=e.Path,Chunk=e.Chunk,Size=e.Size};
+                var key=scope+"|"+e.Path;
+                if(entries.TryGetValue(key,out var existing)&&Matches(asset,existing))continue;
+                if(!matched.TryGetValue(e.Chunk,out var valid)) {
+                    valid=seed.Containers.TryGetValue(e.Chunk,out var expected)&&LibrarySeed.Fingerprint(paks,e.Chunk)==expected;
+                    matched[e.Chunk]=valid;
+                }
+                if(!valid)continue;
+                entries[key]=e with{Scope=scope,Source=Source(asset)};changed=true;
+                if(record.Image!=null)images.Add((record.Image,ThumbnailKey(asset)));
+            }
+            foreach(var sub in seed.Subcategories)if(subcategories.TryAdd(paks.ToUpperInvariant()+"|"+sub.Key,sub.Value))changed=true;
+            if(changed)UpdateArchive(target=>{
+                foreach(var image in images){var old=zip.GetEntry(image.From);if(old==null)continue;target.GetEntry(image.To)?.Delete();using var a=old.Open();using var b=target.CreateEntry(image.To,CompressionLevel.NoCompression).Open();a.CopyTo(b);}
+            });
+        }catch(Exception ex){Warning="Não foi possível aplicar a biblioteca inicial: "+ex.Message;}
     }
     string Source(Asset asset) {
         if(sources.TryGetValue(asset.Chunk,out var saved))return saved;

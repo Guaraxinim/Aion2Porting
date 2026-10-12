@@ -1,6 +1,9 @@
-﻿param([ValidateSet('catalog','export','preview','audio','inspect','animation','animation-export')][string]$Mode,[string]$RequestFile,[string]$ResultFile,[string]$Blender,[string]$Game='C:\Program Files (x86)\Steam\steamapps\common\AION2',[string]$OutputRoot)
+param([ValidateSet('catalog','export','preview','audio','inspect','animation','animation-export')][string]$Mode,[string]$RequestFile,[string]$ResultFile,[string]$Blender,[string]$Game='C:\Program Files (x86)\Steam\steamapps\common\AION2',[string]$OutputRoot)
 $ErrorActionPreference='Stop'
-$root=Split-Path $PSScriptRoot -Parent
+$supportRoot=Split-Path $PSScriptRoot -Parent
+$root=if($env:AION2_WORK_ROOT){$env:AION2_WORK_ROOT}else{$supportRoot}
+$root=[IO.Path]::GetFullPath($root)
+$env:AION2_SUPPORT_ROOT=$supportRoot
 Set-Location $root
 New-Item -ItemType Directory -Force -Path "$root/reports","$root/exports" | Out-Null
 . "$PSScriptRoot/export-workflow.ps1"
@@ -9,11 +12,11 @@ Remove-Item Env:AION2_EXPORT_ROOT -ErrorAction SilentlyContinue
 $env:DOTNET_CLI_TELEMETRY_OPTOUT='1'
 $manifest=Join-Path $root ('reports/desktop-'+[guid]::NewGuid().ToString('N')+'.json')
 if($env:AION2_CATALOG_SCAN -eq '1'){$manifest=Join-Path $root 'reports/catalog-scan/audio-manifest.json'}
-$engine="$root/backend/Aion2Porting.Cli.exe"
+$engine="$supportRoot/backend/Aion2Porting.Cli.exe"
 $engineArgs=@()
 if(-not(Test-Path -LiteralPath $engine)) {
-    $engine="$root/tools/dotnet/dotnet.exe"
-    $engineArgs=@("$root/src/Aion2Porting.Cli/bin/Release/net10.0/Aion2Porting.Cli.dll")
+    $engine="$supportRoot/tools/dotnet/dotnet.exe"
+    $engineArgs=@("$supportRoot/src/Aion2Porting.Cli/bin/Release/net10.0/Aion2Porting.Cli.dll")
 }
 try {
     $paks=@((Join-Path $Game 'Aion2/Content/Paks'),(Join-Path $Game 'Content/Paks'),$Game) | Where-Object { (Test-Path -LiteralPath $_ -PathType Container) -and @(Get-ChildItem -LiteralPath $_ -Filter '*.utoc' -File).Count -gt 0 } | Select-Object -First 1
@@ -42,7 +45,7 @@ try {
         $assetRoot=if($request.AssetRoot){[IO.Path]::GetFullPath([string]$request.AssetRoot)}else{''}
         if($model -and (!(Test-Path -LiteralPath $model -PathType Leaf) -or [IO.Path]::GetExtension($model) -ne '.glb')){throw 'O modelo GLB selecionado não está mais disponível.'}
         $ErrorActionPreference='Continue'
-        & $Blender --background --factory-startup --python-exit-code 1 --python "$root/scripts/export_animation_blender.py" -- $request.Clip $blend $model $assetRoot *> $log
+        & $Blender --background --factory-startup --python-exit-code 1 --python "$supportRoot/scripts/export_animation_blender.py" -- $request.Clip $blend $model $assetRoot *> $log
         $code=$LASTEXITCODE
         $ErrorActionPreference='Stop'
         if($code -ne 0){throw "Não foi possível exportar a animação. Log: $log"}
@@ -107,7 +110,7 @@ try {
             throw "Este asset não forneceu mídia de áudio. Consulte $($m.ReportDirectory)."
         }
         $audio=Get-Content -LiteralPath $audioReport -Raw | ConvertFrom-Json
-        $converter=Join-Path $root 'tools/vgmstream/vgmstream-cli.exe'
+        $converter=Join-Path $supportRoot 'tools/vgmstream/vgmstream-cli.exe'
         if(!(Test-Path -LiteralPath $converter)){throw 'Conversor de áudio ausente: tools/vgmstream/vgmstream-cli.exe'}
         $tracks=@();$failed=0
         foreach($source in @($audio.Files | Select-Object -First 64)) {
@@ -151,7 +154,7 @@ try {
             Write-Output ('BLENDER '+$item.Path)
             $log=Join-Path $m.ReportDirectory ('blender-'+(Split-Path $item.OutputDirectory -Leaf)+'.log')
             $ErrorActionPreference='Continue'
-            & $Blender --background --factory-startup --python-exit-code 1 --python "$root/scripts/validate_blender.py" -- $item.OutputDirectory *> $log
+            & $Blender --background --factory-startup --python-exit-code 1 --python "$supportRoot/scripts/validate_blender.py" -- $item.OutputDirectory *> $log
             $blenderCode=$LASTEXITCODE
             $ErrorActionPreference='Stop'
             if($blenderCode -ne 0) { throw "Falha no Blender. Log: $log" }

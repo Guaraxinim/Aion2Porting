@@ -26,7 +26,7 @@ public partial class MainWindow {
         var state=System.IO.Path.Combine(root,"cache","scan-progress.dat");
         foreach(var legacyState in new[]{System.IO.Path.Combine(folder,"progress.json"),System.IO.Path.Combine(folder,"progress.json.tmp")})if(File.Exists(legacyState))CompactDat.Migrate(legacyState,state,System.IO.Path.GetFileName(legacyState));
         var paks=ResolvePaks(game);
-        var mapping=System.IO.Path.Combine(root,"mappings","AION2-5.3.2.0-1.0.52.0.usmap");
+        var mapping=ReleaseRuntime.Support(root,"mappings","AION2-5.3.2.0-1.0.52.0.usmap");
         var scope=Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(paks.ToUpperInvariant()+"|"+Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(mapping)))+"|scan-v1")));
         var sourceStamps=new Dictionary<string,string>(StringComparer.OrdinalIgnoreCase);
         string Key(Asset asset) {
@@ -134,11 +134,11 @@ public partial class MainWindow {
         File.Delete(work.Result);File.Delete(System.IO.Path.ChangeExtension(work.Result,".log"));
     }
     async Task StartScanServer(string paks){
-        var executable=System.IO.Path.Combine(root,"backend","Aion2Porting.Cli.exe");
-        var info=new ProcessStartInfo(File.Exists(executable)?executable:System.IO.Path.Combine(root,"tools","dotnet","dotnet.exe")){UseShellExecute=false,CreateNoWindow=true,RedirectStandardInput=true,RedirectStandardOutput=true,RedirectStandardError=true,WorkingDirectory=root};
-        if(!File.Exists(executable))info.ArgumentList.Add(System.IO.Path.Combine(root,"src","Aion2Porting.Cli","bin","Release","net10.0","Aion2Porting.Cli.dll"));
+        var executable=ReleaseRuntime.Support(root,"backend","Aion2Porting.Cli.exe");
+        var info=new ProcessStartInfo(File.Exists(executable)?executable:ReleaseRuntime.Support(root,"tools","dotnet","dotnet.exe")){UseShellExecute=false,CreateNoWindow=true,RedirectStandardInput=true,RedirectStandardOutput=true,RedirectStandardError=true,WorkingDirectory=root};
+        if(!File.Exists(executable))info.ArgumentList.Add(ReleaseRuntime.Support(root,"src","Aion2Porting.Cli","bin","Release","net10.0","Aion2Porting.Cli.dll"));
         info.ArgumentList.Add("scan-server");info.ArgumentList.Add("1");info.ArgumentList.Add("*");info.ArgumentList.Add("*");
-        info.Environment["AION2_ROOT"]=root;info.Environment["AION2_GAME_DIR"]=paks;
+        info.Environment["AION2_SUPPORT_ROOT"]=ReleaseRuntime.SupportRoot??root;info.Environment["AION2_ROOT"]=root;info.Environment["AION2_GAME_DIR"]=paks;
         scanServer=Process.Start(info)??throw new IOException("Não foi possível iniciar a verificação.");
         scanServer.ErrorDataReceived+=(_,_)=>{};scanServer.BeginErrorReadLine();
         await ReadScanLine("SCAN_READY",TimeSpan.FromMinutes(2));

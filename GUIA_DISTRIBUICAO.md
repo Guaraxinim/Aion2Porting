@@ -1,17 +1,13 @@
-# Aion2 Porting 0.7.0
+# Aion2 Porting 0.7.21
 
-Abra Aion2Porting.exe. Mantenha todas as pastas de suporte junto ao executável; para compartilhar ou mover, copie esta pasta inteira.
+Baixe e abra Aion2Porting.exe. Este é o único arquivo necessário para distribuir o aplicativo. Windows x64; .NET e componentes do conversor estão incluídos. Blender continua sendo uma instalação externa, necessária para gerar .blend.
 
-Requisitos: Windows x64 e Aion 2 instalado. O runtime já está incluído; não é necessário instalar Git ou SDK .NET. Blender instalado é necessário para gerar os arquivos .blend, mas não para a prévia 3D.
+Na primeira abertura, os componentes internos são preparados em %LOCALAPPDATA%\Aion2Porting\runtime. Os dados persistentes ficam em %LOCALAPPDATA%\Aion2Porting\cache, em arquivos DAT compactados. Trocar o EXE não apaga esses dados. O cache inicial inclui catálogo, tipos confirmados, miniaturas e perfis de compatibilidade de esqueletos. Configurações pessoais, modelos, texturas e áudios do jogo não são distribuídos.
 
-Em Opções, indique a instalação do jogo, o executável do Blender e a pasta de destino dos arquivos exportados. O jogo é acessado somente para leitura.
+O cache inicial é aplicado por asset somente quando mapping, hash do índice UTOC e tamanho do UCAS correspondem. Tipos locais e subcategorias editadas pelo usuário são preservados. Uma alteração nos arquivos do jogo pode exigir Atualizar biblioteca; o catálogo incluído representa a instalação usada para preparar esta versão, não comprova compatibilidade com outras versões do jogo.
 
-Na Biblioteca, use busca, exclusões, categorias e seleção de múltiplos tipos. Selecione um asset para abrir a prévia 3D ou adicione itens à fila de exportação. A fila e a biblioteca podem ser ocultadas para aumentar o espaço disponível.
+Em Opções, configure instalação do Aion 2, Blender, idioma e pasta de saída. O jogo é acessado apenas para leitura. A saída padrão fica em %LOCALAPPDATA%\Aion2Porting\Exportados; ela pode ser alterada. As prévias nativas são temporárias e descartadas ao fechar. Elas precisam existir como arquivos enquanto conversores, Blender e viewers as utilizam; não se promete ausência total de arquivos temporários durante o uso.
 
-Uma prévia 3D carregada com sucesso registra o asset como Modelo disponível. Essa informação fica no cache local. As prévias temporárias são apagadas ao fechar o programa; a lista de modelos disponíveis é preservada.
+Tipos e miniaturas não significam que todos os assets sejam compatíveis. Visualização e exportação dependem de cada asset. Shaders são ativados manualmente e não reproduzem todos os efeitos do jogo. A preparação para FiveM é uma etapa posterior.
 
-A distribuição começa sem catálogo, configurações, cache ou exports pessoais. O programa cria esses dados ao ser usado; mantenha a pasta em um local com permissão de escrita.
-
-A compatibilidade depende do asset. A visualização usa geometria e, quando disponível, textura base; não reproduz integralmente shaders, transparência, animações ou física do jogo. A exportação não substitui a preparação posterior para FiveM. Consulte os relatórios gerados quando uma operação falhar.
-
-Licenças de componentes incluídas na pasta licenses.
+Licenças e este guia ficam junto aos componentes internos em runtime. O release também fornece SHA256 para conferir o download.

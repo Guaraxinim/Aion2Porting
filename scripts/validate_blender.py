@@ -4,11 +4,12 @@ Run: blender --background --factory-startup --python-exit-code 1 --python script
 """
 import bpy
 import sys
+import os
 import json
 import math
 from pathlib import Path
 
-root = Path(__file__).resolve().parent.parent
+root = Path(os.environ.get("AION2_ROOT", Path(__file__).resolve().parent.parent)).resolve()
 source = Path(sys.argv[sys.argv.index('--') + 1]).resolve()
 if not source.is_relative_to(root / 'exports'):
     raise ValueError('Validation input must be inside project exports')

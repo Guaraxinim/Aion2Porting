@@ -326,7 +326,7 @@ public partial class MainWindow : Window {
             ready=false; all=catalog.Files;
             string paks;
             try{paks=ResolvePaks(game);}catch{paks=System.IO.Path.Combine(game,"Aion2","Content","Paks");}
-            availability=new ModelAvailabilityCache(System.IO.Path.Combine(root,"cache","available-models.json"),paks,System.IO.Path.Combine(root,"mappings","AION2-5.3.2.0-1.0.52.0.usmap"));
+            availability=new ModelAvailabilityCache(System.IO.Path.Combine(root,"cache","available-models.json"),paks,ReleaseRuntime.Support(root,"mappings","AION2-5.3.2.0-1.0.52.0.usmap"));
             availability.Apply(all);
             Categories.ItemsSource=new[]{new CategoryChoice("Todos os assets",all.Count)}
                 .Concat(all.GroupBy(a=>a.Category).OrderBy(g=>g.Key).Select(g=>new CategoryChoice(g.Key,g.Count()))).ToArray();
@@ -669,8 +669,9 @@ public partial class MainWindow : Window {
         var result=System.IO.Path.Combine(root,"reports","desktop-result-"+Guid.NewGuid().ToString("N")+".json");
         if(scanning)result=System.IO.Path.Combine(root,"reports","catalog-scan","audio-result.json");
         var psi=new ProcessStartInfo("powershell.exe"){UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true,WorkingDirectory=root};
-        foreach(var arg in new[]{"-NoProfile","-ExecutionPolicy","Bypass","-File",System.IO.Path.Combine(root,"scripts/desktop-worker.ps1"),"-Mode",mode,"-ResultFile",result,"-Blender",blender,"-Game",game,"-OutputRoot",outputFolder})psi.ArgumentList.Add(arg);
+        foreach(var arg in new[]{"-NoProfile","-ExecutionPolicy","Bypass","-File",ReleaseRuntime.Support(root,"scripts/desktop-worker.ps1"),"-Mode",mode,"-ResultFile",result,"-Blender",blender,"-Game",game,"-OutputRoot",outputFolder})psi.ArgumentList.Add(arg);
         if(request.Length>0){psi.ArgumentList.Add("-RequestFile");psi.ArgumentList.Add(request);}
+        psi.Environment["AION2_WORK_ROOT"]=root;
         if(scanning)psi.Environment["AION2_CATALOG_SCAN"]="1";
         var logPath=System.IO.Path.ChangeExtension(result,".log");
         using var log=new StreamWriter(logPath);
@@ -770,7 +771,7 @@ public partial class MainWindow : Window {
         if(Window.GetWindow(PreviewHost.Content as DependencyObject)!=this)throw new Exception("Viewer is not embedded");
         if(asset.Hint!=ModelAvailabilityCache.AvailableHint)throw new Exception("Asset was not confirmed");
         var cacheFile=System.IO.Path.Combine(root,"cache","available-models.json");
-        var mapping=System.IO.Path.Combine(root,"mappings","AION2-5.3.2.0-1.0.52.0.usmap");
+        var mapping=ReleaseRuntime.Support(root,"mappings","AION2-5.3.2.0-1.0.52.0.usmap");
         var reloaded=new ModelAvailabilityCache(cacheFile,ResolvePaks(game),mapping);
         var copy=new Asset {Path=asset.Path,Size=asset.Size,Chunk=asset.Chunk};copy.Prepare();reloaded.Apply(new[]{copy});
         if(copy.Hint!=ModelAvailabilityCache.AvailableHint)throw new Exception("Cache did not survive reload");
@@ -1219,8 +1220,12 @@ public partial class MainWindow : Window {
 public static class Entry {
     [STAThread]
     public static int Main(string[] args) {
-        string? root=AppContext.BaseDirectory;
-        while(root!=null && !File.Exists(System.IO.Path.Combine(root,"scripts/desktop-worker.ps1")))root=Directory.GetParent(root)?.FullName;
+        if(args.Length==2 && args[0]=="--release-cache-test"){LibrarySeed.Verify(args[1]);return 0;}
+        if(args.Length==4 && args[0]=="--build-library-seed"){LibrarySeed.Build(args[1],args[2],args[3]);return 0;}
+        string? root=ReleaseRuntime.Initialize();
+        if(root==null){root=AppContext.BaseDirectory;
+        while(root!=null && !File.Exists(ReleaseRuntime.Support(root,"scripts/desktop-worker.ps1")))root=Directory.GetParent(root)?.FullName;
+        }
         var missingSupport=root==null;root??=AppContext.BaseDirectory;
         var app=new Application();
         if(args.Contains("--scan-catalog")){
