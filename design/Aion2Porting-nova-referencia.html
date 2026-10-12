@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark h-full select-none">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AION 2 / IMPORTER</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        ap: {
+                            bg: '#080c14',
+                            sidebar: '#0d111d',
+                            panel: '#121726',
+                            card: '#181f33',
+                            hover: '#222b45',
+                            border: '#232d47',
+                            cyan: '#00f2fe',
+                            cyanHover: '#00d8e6',
+                            textMuted: '#67789e',
+                            textLight: '#94a3b8'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts & Lucide Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Three.js for Interactive 3D Model Preview -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(13, 16, 29, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #232d47;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00f2fe;
+        }
+
+        /* Modern Custom Select Styling */
+        select option {
+            background-color: #121726;
+            color: #ffffff;
+            padding: 12px;
+        }
+
+        .glow-cyan {
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.25);
+        }
+
+        .rarity-legendary { background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); }
+        .rarity-epic { background: linear-gradient(135deg, #9d4edd 0%, #c77dff 100%); }
+        .rarity-rare { background: linear-gradient(135deg, #0072ff 0%, #00c6ff 100%); }
+
+        .asset-card {
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .asset-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 242, 254, 0.2);
+        }
+
+        /* Glassmorphism & Modern Card Styling */
+        .glass-panel {
+            background: rgba(24, 31, 51, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        .modern-gradient-border {
+            background: linear-gradient(#121726, #121726) padding-box,
+                        linear-gradient(135deg, rgba(0,242,254,0.4), rgba(35,45,71,0.2)) border-box;
+            border: 1px solid transparent;
+        }
+    </style>
+</head>
+<body class="bg-ap-bg text-slate-100 font-sans h-full overflow-hidden flex flex-col antialiased">
+
+    <header class="h-14 bg-ap-sidebar/95 backdrop-blur-md border-b border-ap-border/80 px-4 flex items-center justify-between z-20 shrink-0">
+        <!-- Logo & App Title -->
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-cyan-600 via-ap-cyan to-blue-500 p-0.5 flex items-center justify-center shadow-lg shadow-cyan-950/40">
+                <div class="w-full h-full bg-ap-sidebar rounded-[14px] flex items-center justify-center">
+                    <i data-lucide="shield" class="w-5 h-5 text-ap-cyan"></i>
+                </div>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="font-extrabold text-sm tracking-wider text-white">AION 2 <span class="text-ap-cyan">/ IMPORTER</span></h1>
+                    <span class="px-2 py-0.5 rounded-full bg-ap-cyan/10 border border-ap-cyan/30 text-[10px] font-extrabold text-ap-cyan">v0.7.11</span>
+                </div>
+                <p class="text-[10px] text-ap-textMuted" id="lblSubTitle">Explore, selecione e leve seus assets para o Blender</p>
+            </div>
+        </div>
+
+        <!-- Header Action Buttons -->
+        <div class="flex items-center gap-2">
+            <button onclick="refreshCatalog()" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-ap-card/80 hover:bg-ap-hover border border-ap-border/80 text-xs font-semibold text-gray-200 hover:text-white transition-all shadow-sm active:scale-95">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-ap-cyan" id="refreshIcon"></i>
+                <span id="lblBtnRefreshCat">Atualizar catálogo</span>
+            </button>
+            <button onclick="openFolder('game')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-ap-card/80 hover:bg-ap-hover border border-ap-border/80 text-xs font-semibold text-gray-300 hover:text-white transition-all active:scale-95">
+                <i data-lucide="folder" class="w-3.5 h-3.5 text-blue-400"></i>
+                <span>Jogo...</span>
+            </button>
+            <button onclick="openFolder('exports')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-ap-card/80 hover:bg-ap-hover border border-ap-border/80 text-xs font-semibold text-gray-300 hover:text-white transition-all active:scale-95">
+                <i data-lucide="folder-output" class="w-3.5 h-3.5 text-emerald-400"></i>
+                <span id="lblBtnExportDir">Pasta de saída...</span>
+            </button>
+            <button onclick="openFolder('blender')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-ap-card/80 hover:bg-ap-hover border border-ap-border/80 text-xs font-semibold text-gray-300 hover:text-white transition-all active:scale-95">
+                <i data-lucide="box" class="w-3.5 h-3.5 text-orange-400"></i>
+                <span>Blender...</span>
+            </button>
+            <button onclick="openOptionsModal()" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-ap-cyan text-slate-950 font-bold text-xs hover:bg-ap-cyanHover transition-all shadow-lg shadow-cyan-950/50 hover:shadow-cyan-950/80 active:scale-95">
+                <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+                <span id="lblBtnOptions">Opções</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="flex-1 flex min-h-0 overflow-hidden relative">
+
+        <!-- LEFT SIDEBAR -->
+        <aside class="w-64 bg-ap-sidebar border-r border-ap-border/80 flex flex-col shrink-0 select-none">
+            <div class="p-4 space-y-6 flex-1 overflow-y-auto">
+                
+                <!-- GERAL SECTION -->
+                <div>
+                    <h3 class="text-[10px] font-extrabold text-ap-textMuted uppercase tracking-wider mb-2" id="lblSecGeneral">Geral</h3>
+                    <nav class="space-y-1">
+                        <button onclick="switchTab('home')" id="navHome" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all bg-ap-card text-ap-cyan border border-ap-cyan/30 shadow-sm">
+                            <i data-lucide="home" class="w-4 h-4"></i>
+                            <span id="lblNavHome">Início</span>
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- EXPORTAR / BIBLIOTECA SECTION -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-[10px] font-extrabold text-ap-textMuted uppercase tracking-wider" id="lblSecExport">Exportar</h3>
+                        <span class="text-[10px] font-bold text-ap-cyan px-2 py-0.5 bg-ap-cyan/10 rounded-full border border-ap-cyan/20">598.534</span>
+                    </div>
+
+                    <button onclick="switchTab('library')" id="navLibrary" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-gray-400 hover:text-white hover:bg-ap-card/60 transition-all mb-2">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="layers" class="w-4 h-4"></i>
+                            <span id="lblNavLibrary">Biblioteca</span>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-ap-textMuted"></i>
+                    </button>
+
+                    <!-- CATEGORIES LIST -->
+                    <div class="pl-2 space-y-0.5 border-l border-ap-border/60 ml-3" id="categoriesList">
+                        <!-- JS generated categories -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- FOOTER INFO -->
+            <div class="p-3.5 border-t border-ap-border/60 bg-ap-panel/50 text-[10px] text-ap-textMuted space-y-1">
+                <div class="flex items-center justify-between">
+                    <span class="font-medium text-slate-300">Catálogo: 08/10 21:00</span>
+                    <span class="text-emerald-400 font-bold flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Pronto
+                    </span>
+                </div>
+                <p class="truncate text-[9px] opacity-75 font-mono">Saída: E:\Download\Aion2Porting\Exportados</p>
+            </div>
+        </aside>
+
+        <!-- MAIN WORKSPACE -->
+        <div class="flex-1 flex flex-col min-w-0 bg-ap-bg relative">
+
+            <!-- TAB 1: INÍCIO (NEWS & UPDATES) -->
+            <main id="tabHome" class="flex-1 p-6 overflow-y-auto space-y-6">
+                <!-- Welcome Banner -->
+                <div class="relative rounded-3xl bg-gradient-to-r from-cyan-950/60 via-ap-panel to-blue-950/40 p-8 border border-ap-cyan/20 overflow-hidden shadow-2xl">
+                    <div class="relative z-10 max-w-2xl space-y-3">
+                        <span class="px-3 py-1 rounded-full bg-ap-cyan/20 text-ap-cyan text-xs font-extrabold tracking-wider border border-ap-cyan/30 uppercase">AION 2 Importer Hub</span>
+                        <h2 class="text-2xl font-black text-white tracking-wide">Bem-vindo ao AION 2 Asset Extractor</h2>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            Extraia e exporte diretamente para o Blender modelos 3D, texturas, animações e efeitos com preservação de rigging, esqueleto original e shaders base.
+                        </p>
+                        <div class="pt-2 flex items-center gap-3">
+                            <button onclick="switchTab('library')" class="px-5 py-2.5 rounded-2xl bg-ap-cyan text-slate-950 font-extrabold text-xs hover:bg-ap-cyanHover transition-all shadow-lg shadow-cyan-950/50 flex items-center gap-2 active:scale-95">
+                                <i data-lucide="grid" class="w-4 h-4"></i>
+                                <span id="lblExploreLibrary">Explorar Biblioteca</span>
+                            </button>
+                            <button onclick="openOptionsModal()" class="px-5 py-2.5 rounded-2xl bg-ap-card border border-ap-border/90 text-xs font-bold text-white hover:bg-ap-hover transition-all flex items-center gap-2 active:scale-95">
+                                <i data-lucide="settings" class="w-4 h-4"></i>
+                                <span id="lblConfigPaths">Configurar Caminhos</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Latest Updates Grid -->
+                <div>
+                    <h3 class="text-sm font-extrabold text-white mb-3 flex items-center gap-2">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-ap-cyan"></i>
+                        <span id="lblNewsTitle">Notas de Atualização & Novidades</span>
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-ap-card/80 border border-ap-border/80 rounded-2xl p-5 space-y-2 hover:border-ap-cyan/40 transition">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-ap-cyan">Versão v0.7.11</span>
+                                <span class="text-[10px] text-ap-textMuted">Hoje</span>
+                            </div>
+                            <h4 class="text-xs font-bold text-white">Suporte a Shader de Materiais & Texturas HD</h4>
+                            <p class="text-xs text-ap-textMuted leading-relaxed">
+                                Adicionada exportação automática de mapas de normais, specular e mapas de emissão integrados ao script do Blender.
+                            </p>
+                        </div>
+                        <div class="bg-ap-card/80 border border-ap-border/80 rounded-2xl p-5 space-y-2 hover:border-ap-cyan/40 transition">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-blue-400">Versão v0.7.0</span>
+                                <span class="text-[10px] text-ap-textMuted">05/10/2026</span>
+                            </div>
+                            <h4 class="text-xs font-bold text-white">Visualizador 3D em Tempo Real</h4>
+                            <p class="text-xs text-ap-textMuted leading-relaxed">
+                                Agora você pode inspecionar a malha 3D e esqueletos antes de realizar o processo de exportação.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- TAB 2: BIBLIOTECA DE ASSETS -->
+            <main id="tabLibrary" class="hidden flex-1 flex flex-col min-w-0 bg-ap-bg relative">
+                
+                <!-- INTEGRATED ROUNDED SEARCH BAR & FILTERS -->
+                <header class="p-3.5 bg-ap-panel/80 backdrop-blur border-b border-ap-border/80 flex flex-col gap-3 z-10 shrink-0">
+                    
+                    <!-- Row 1: Search Inputs -->
+                    <div class="flex items-center gap-2">
+                        <select id="searchTypeSelect" class="bg-ap-card border border-ap-border hover:border-ap-cyan/50 text-xs text-white rounded-2xl px-3.5 py-2.5 font-medium focus:outline-none focus:border-ap-cyan cursor-pointer transition shadow-sm">
+                            <option value="pathWords">Palavras no caminho</option>
+                            <option value="exactPath">Caminho exato</option>
+                            <option value="assetName">Apenas nome do Asset</option>
+                        </select>
+
+                        <div class="relative flex-1">
+                            <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3 text-ap-textMuted"></i>
+                            <input id="assetSearchInput" oninput="filterAssets()" type="text" placeholder="Busca por nome ou caminho • Ctrl/clique e Shift selecionam vários itens" 
+                                class="w-full bg-ap-bg border border-ap-border rounded-2xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-ap-textMuted focus:outline-none focus:border-ap-cyan transition">
+                        </div>
+
+                        <button onclick="clearSearchFilters()" class="px-4 py-2.5 bg-ap-card hover:bg-ap-hover border border-ap-border text-xs font-bold text-gray-300 hover:text-white rounded-2xl transition shadow-sm active:scale-95">
+                            Limpar
+                        </button>
+                    </div>
+
+                    <!-- Row 2: Cascading Dropdowns -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        
+                        <!-- Combined Cascading Dropdown Container -->
+                        <div class="flex items-center bg-ap-card border border-ap-border/90 rounded-2xl p-1 gap-1 shadow-sm">
+                            <!-- Subcategory Dropdown -->
+                            <select id="subCatSelect" onchange="filterAssets()" class="bg-ap-bg/80 border-0 text-xs text-white font-medium rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-ap-cyan/50 cursor-pointer">
+                                <option value="all">Todas as subcategorias</option>
+                                <option value="character">Personagens & Daevas</option>
+                                <option value="weapons">Armas e Escudos</option>
+                                <option value="effects">Efeitos & Magias</option>
+                                <option value="environment">Cenários e Objetos</option>
+                            </select>
+
+                            <div class="w-px h-4 bg-ap-border"></div>
+
+                            <!-- Model Type Dropdown -->
+                            <select id="modelTypeSelect" onchange="filterAssets()" class="bg-ap-bg/80 border-0 text-xs text-ap-cyan font-bold rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-ap-cyan/50 cursor-pointer">
+                                <option value="all">Todos os tipos</option>
+                                <option value="Animação (nome)">Animação (nome)</option>
+                                <option value="Controle (nome)">Controle (nome)</option>
+                                <option value="Esqueleto (nome)">Esqueleto (nome)</option>
+                                <option value="Material (nome)">Material (nome)</option>
+                                <option value="Modelo disponível">Modelo disponível</option>
+                                <option value="Modelo provável" selected>Modelo provável</option>
+                                <option value="Não classificado">Não classificado</option>
+                                <option value="Textura (nome)">Textura (nome)</option>
+                            </select>
+
+                            <div class="w-px h-4 bg-ap-border"></div>
+
+                            <!-- Chunks Dropdown -->
+                            <select id="chunkSelect" onchange="filterAssets()" class="bg-ap-bg/80 border-0 text-xs text-white font-medium rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-ap-cyan/50 cursor-pointer">
+                                <option value="all">Todos os chunks</option>
+                                <option value="chunk0">Chunk 00 (Core)</option>
+                                <option value="chunk1">Chunk 01 (Maps)</option>
+                            </select>
+                        </div>
+
+                        <!-- Exclude Field -->
+                        <div class="flex items-center gap-2 bg-ap-bg border border-ap-border rounded-2xl px-3 py-1.5 flex-1 min-w-[180px]">
+                            <span class="text-[10px] text-ap-textMuted font-bold uppercase tracking-wider">Excluir:</span>
+                            <input id="excludeInput" oninput="filterAssets()" type="text" placeholder="palavras-chave..." class="bg-transparent text-xs text-white focus:outline-none w-full">
+                        </div>
+
+                        <!-- Prefer Base Checkbox -->
+                        <label class="flex items-center gap-2 text-xs text-gray-300 cursor-pointer pl-1">
+                            <input type="checkbox" id="preferBaseType" class="rounded-lg bg-ap-card border-ap-border text-ap-cyan focus:ring-0">
+                            <span>Preferir base aos Type</span>
+                        </label>
+                    </div>
+                </header>
+
+                <!-- TOOLBAR ACTIONS -->
+                <div class="px-4 py-2.5 bg-ap-sidebar/40 border-b border-ap-border/60 flex items-center justify-between shrink-0">
+                    <div class="flex items-center gap-2">
+                        <button onclick="addSelectedToQueue()" class="px-3.5 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95">
+                            <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                            <span>Adicionar selecionados</span>
+                        </button>
+                        <button onclick="previewSelected()" class="px-3.5 py-1.5 bg-ap-cyan/20 hover:bg-ap-cyan/30 text-ap-cyan border border-ap-cyan/30 rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95">
+                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                            <span>Visualizar 3D</span>
+                        </button>
+                        <button onclick="copySelectedPath()" class="px-3.5 py-1.5 bg-ap-card hover:bg-ap-hover text-gray-300 border border-ap-border rounded-xl text-xs font-semibold transition active:scale-95">
+                            Copiar caminho
+                        </button>
+                    </div>
+                    <div class="text-xs text-ap-textMuted font-medium" id="assetCounterLabel">
+                        Exibindo 24 de 598.534 resultados
+                    </div>
+                </div>
+
+                <!-- ASSETS GRID CONTAINER -->
+                <div class="flex-1 overflow-y-auto p-4">
+                    <div id="assetsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
+                        <!-- JS Dynamic Asset Cards -->
+                    </div>
+                </div>
+
+                <!-- FLOATING EXPORT BAR -->
+                <div class="p-3 bg-ap-panel/90 backdrop-blur border-t border-ap-border/80 flex items-center justify-between z-10 shrink-0">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs text-slate-300 font-semibold" id="queueStatusText">0 itens na fila de exportação</span>
+                    </div>
+                    <button onclick="exportToBlender()" class="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-ap-cyan to-blue-500 text-slate-950 font-extrabold text-xs hover:brightness-110 transition shadow-lg shadow-cyan-950/50 flex items-center gap-2 active:scale-95">
+                        <i data-lucide="box" class="w-4 h-4"></i>
+                        <span>EXPORTAR PARA O BLENDER</span>
+                    </button>
+                </div>
+            </main>
+        </div>
+
+        <!-- RIGHT PANEL: ASSET INSPECTOR & LIVE 3D PREVIEW -->
+        <aside id="inspectorPanel" class="w-80 bg-ap-sidebar border-l border-ap-border/80 flex flex-col shrink-0 select-none hidden">
+            <!-- Inspector Header -->
+            <div class="p-3.5 border-b border-ap-border/80 flex items-center justify-between bg-ap-panel">
+                <span class="text-xs font-extrabold text-ap-cyan uppercase tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="scan" class="w-4 h-4"></i>
+                    Inspeção do Asset
+                </span>
+                <button onclick="toggleInspector(false)" class="p-1 text-ap-textMuted hover:text-white rounded-lg transition">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="p-4 flex-1 overflow-y-auto space-y-4">
+                <!-- Asset Title Block -->
+                <div>
+                    <h3 id="inspectTitle" class="text-sm font-bold text-white break-all">SM_BeritraC_09_Skill02_Axe_000</h3>
+                    <p id="inspectPath" class="text-[10px] text-ap-textMuted break-all mt-1 font-mono">AION2/Content/Item/Weapon/Axe/SM_BeritraC_09_Skill02_Axe_000.uasset</p>
+                </div>
+
+                <!-- 3D Canvas Box -->
+                <div class="relative w-full h-56 rounded-2xl bg-slate-950 border border-ap-border overflow-hidden">
+                    <div id="threeCanvasContainer" class="w-full h-full"></div>
+                    <div class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-slate-900/80 backdrop-blur text-[9px] font-bold text-ap-cyan border border-ap-cyan/30">
+                        WebGL 3D
+                    </div>
+                </div>
+
+                <!-- Model Stats -->
+                <div class="grid grid-cols-2 gap-2 text-[10px]">
+                    <div class="p-2.5 rounded-xl bg-ap-card border border-ap-border">
+                        <span class="text-ap-textMuted block">Vértices</span>
+                        <span class="font-bold text-white text-xs">580</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-ap-card border border-ap-border">
+                        <span class="text-ap-textMuted block">Triângulos</span>
+                        <span class="font-bold text-white text-xs">874</span>
+                    </div>
+                </div>
+
+                <!-- Quick Action Button -->
+                <button onclick="addCurrentToQueue()" class="w-full py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 font-bold text-xs transition flex items-center justify-center gap-2 active:scale-95">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>Adicionar à Fila</span>
+                </button>
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- OPTIONS MODAL (CONFIGURAÇÕES) -->
+    <div id="optionsModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden">
+        <div class="w-full max-w-xl bg-ap-panel border border-ap-border rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+            
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-ap-border flex items-center justify-between bg-ap-sidebar">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-5 h-5 text-ap-cyan"></i>
+                    <h3 class="font-extrabold text-sm text-white" id="lblModalOptTitle">Opções de Configuração</h3>
+                </div>
+                <button onclick="closeOptionsModal()" class="p-1 rounded-xl text-ap-textMuted hover:text-white hover:bg-ap-card transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6 space-y-5 overflow-y-auto max-h-[80vh]">
+                
+                <!-- Category 1: Game Path -->
+                <div class="bg-ap-card/60 border border-ap-border/60 rounded-2xl p-4 space-y-2">
+                    <label class="text-xs font-bold text-white flex items-center gap-2" id="lblOptGamePath">
+                        <i data-lucide="folder" class="w-4 h-4 text-blue-400"></i>
+                        Pasta do Jogo (AION 2)
+                    </label>
+                    <div class="flex gap-2">
+                        <input id="inputGamePath" type="text" value="C:\Program Files (x86)\NCSoft\AION2" 
+                            class="flex-1 bg-ap-bg border border-ap-border rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-ap-cyan transition font-mono">
+                        <button onclick="browsePath('inputGamePath')" class="px-4 py-2 bg-ap-card hover:bg-ap-hover border border-ap-border rounded-xl text-xs font-bold text-slate-200 transition active:scale-95">
+                            Procurar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Category 2: Blender Path -->
+                <div class="bg-ap-card/60 border border-ap-border/60 rounded-2xl p-4 space-y-2">
+                    <label class="text-xs font-bold text-white flex items-center gap-2" id="lblOptBlenderPath">
+                        <i data-lucide="box" class="w-4 h-4 text-orange-400"></i>
+                        Executável do Blender
+                    </label>
+                    <div class="flex gap-2">
+                        <input id="inputBlenderPath" type="text" value="C:\Program Files\Blender Foundation\Blender 4.2\blender.exe" 
+                            class="flex-1 bg-ap-bg border border-ap-border rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-ap-cyan transition font-mono">
+                        <button onclick="browsePath('inputBlenderPath')" class="px-4 py-2 bg-ap-card hover:bg-ap-hover border border-ap-border rounded-xl text-xs font-bold text-slate-200 transition active:scale-95">
+                            Procurar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Category 3: Export Path -->
+                <div class="bg-ap-card/60 border border-ap-border/60 rounded-2xl p-4 space-y-2">
+                    <label class="text-xs font-bold text-white flex items-center gap-2" id="lblOptExportPath">
+                        <i data-lucide="folder-output" class="w-4 h-4 text-emerald-400"></i>
+                        Pasta para Exportações
+                    </label>
+                    <div class="flex gap-2">
+                        <input id="inputExportPath" type="text" value="E:\Download\Aion2Porting\Exportados" 
+                            class="flex-1 bg-ap-bg border border-ap-border rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-ap-cyan transition font-mono">
+                        <button onclick="browsePath('inputExportPath')" class="px-4 py-2 bg-ap-card hover:bg-ap-hover border border-ap-border rounded-xl text-xs font-bold text-slate-200 transition active:scale-95">
+                            Procurar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Category 4: Language Selection -->
+                <div class="bg-ap-card/60 border border-ap-border/60 rounded-2xl p-4 space-y-2">
+                    <label class="text-xs font-bold text-white flex items-center gap-2" id="lblOptLanguage">
+                        <i data-lucide="globe" class="w-4 h-4 text-ap-cyan"></i>
+                        Idioma da Interface / Interface Language
+                    </label>
+                    <select id="languageSelect" onchange="changeLanguage(this.value)" class="w-full bg-ap-bg border border-ap-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-ap-cyan font-semibold cursor-pointer">
+                        <option value="pt-BR">Português (Brasil)</option>
+                        <option value="en-US">English (United States)</option>
+                    </select>
+                </div>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 border-t border-ap-border bg-ap-sidebar flex items-center justify-end gap-3">
+                <button onclick="closeOptionsModal()" class="px-5 py-2 rounded-xl bg-ap-card hover:bg-ap-hover text-xs font-bold text-gray-300 transition" id="lblBtnCancel">
+                    Cancelar
+                </button>
+                <button onclick="saveOptions()" class="px-6 py-2 rounded-xl bg-ap-cyan text-slate-950 font-extrabold text-xs hover:bg-ap-cyanHover transition shadow-lg shadow-cyan-950/40 active:scale-95" id="lblBtnSave">
+                    Salvar alterações
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Mock Categories Data
+        const categoriesData = [
+            { id: 'all', name: 'Todos os assets', count: '598.534' },
+            { id: 'audio', name: 'Áudio', count: '68.078' },
+            { id: 'env', name: 'Cenários e objetos', count: '103.491' },
+            { id: 'cine', name: 'Cinemáticas', count: '7.050' },
+            { id: 'fx', name: 'Efeitos', count: '106.496' },
+            { id: 'ui', name: 'Interface', count: '17.704' },
+            { id: 'player', name: 'Jogadores', count: '46.596' },
+            { id: 'maps', name: 'Mapas', count: '112.553' },
+            { id: 'mobs', name: 'Monstros', count: '30.959' },
+            { id: 'npc', name: 'NPCs', count: '7.777' },
+            { id: 'other_char', name: 'Outros personagens', count: '19.762' },
+            { id: 'other_res', name: 'Outros recursos', count: '78.067' },
+            { id: 'pets', name: 'Pets', count: '1' }
+        ];
+
+        // Mock Assets List
+        const mockAssets = [
+            { name: 'SM_BeritraC_09_Skill02_Axe_000', type: 'Modelo provável', cat: 'weapons', size: '57,2 KB', rarity: 'rarity-legendary' },
+            { name: 'SM_Seq_1271_C01_004', type: 'Não classificado', cat: 'cine', size: '10,3 KB', rarity: 'rarity-epic' },
+            { name: 'SM_Seq_1275_C01_001_FBX', type: 'Modelo provável', cat: 'cine', size: '19,1 KB', rarity: 'rarity-epic' },
+            { name: 'SM_BasfeltWaterfall_Cast_003', type: 'Modelo disponível', cat: 'env', size: '48,5 KB', rarity: 'rarity-rare' },
+            { name: 'MOB_BlackDragon_01_KnockDown', type: 'Modelo provável', cat: 'mobs', size: '51,9 KB', rarity: 'rarity-legendary' },
+            { name: 'PET_BlackDragon_01_Sig', type: 'Modelo disponível', cat: 'pets', size: '0,4 KB', rarity: 'rarity-epic' },
+            { name: 'VEH_BlackDragon_01_CV', type: 'Não classificado', cat: 'env', size: '1,0 KB', rarity: 'rarity-rare' },
+            { name: 'FX_FireSpell_Cast_01', type: 'Efeitos', cat: 'fx', size: '12,4 KB', rarity: 'rarity-legendary' }
+        ];
+
+        let selectedCategory = 'all';
+        let activeQueue = [];
+        let scene, camera, renderer, currentMesh;
+
+        // Initialize App
+        window.onload = function() {
+            lucide.createIcons();
+            renderCategories();
+            renderAssetCards(mockAssets);
+            initThreeJS();
+        };
+
+        // Render Left Navigation Categories
+        function renderCategories() {
+            const container = document.getElementById('categoriesList');
+            container.innerHTML = categoriesData.map(c => `
+                <button onclick="selectCategory('${c.id}')" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all ${selectedCategory === c.id ? 'bg-ap-card text-ap-cyan font-bold shadow-sm' : 'text-slate-400 hover:text-white hover:bg-ap-card/40'}">
+                    <span class="truncate">${c.name}</span>
+                    <span class="text-[10px] text-ap-textMuted font-mono">${c.count}</span>
+                </button>
+            `).join('');
+        }
+
+        function selectCategory(id) {
+            selectedCategory = id;
+            renderCategories();
+            filterAssets();
+        }
+
+        // Render Assets Cards Grid
+        function renderAssetCards(assets) {
+            const grid = document.getElementById('assetsGrid');
+            if (assets.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-12 text-center text-xs text-ap-textMuted">Nenhum asset encontrado com os filtros atuais.</div>`;
+                return;
+            }
+
+            grid.innerHTML = assets.map(a => `
+                <div onclick="inspectAsset('${a.name}')" class="asset-card bg-ap-card border border-ap-border/90 hover:border-ap-cyan/60 rounded-2xl p-3 flex flex-col justify-between cursor-pointer group">
+                    <div class="relative w-full h-28 bg-slate-950/80 rounded-xl mb-2 flex items-center justify-center overflow-hidden border border-ap-border/40">
+                        <i data-lucide="box" class="w-8 h-8 text-ap-textMuted group-hover:text-ap-cyan transition transform group-hover:scale-110"></i>
+                        <span class="absolute top-1.5 right-1.5 px-2 py-0.5 rounded-md text-[9px] font-bold text-white ${a.rarity}">
+                            3D
+                        </span>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-white truncate group-hover:text-ap-cyan transition">${a.name}</h4>
+                        <div class="flex items-center justify-between text-[10px] text-ap-textMuted mt-1">
+                            <span>${a.type}</span>
+                            <span>${a.size}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+            document.getElementById('assetCounterLabel').innerText = `Exibindo ${assets.length} de 598.534 resultados`;
+        }
+
+        // Filter Function
+        function filterAssets() {
+            const query = document.getElementById('assetSearchInput').value.toLowerCase();
+            const exclude = document.getElementById('excludeInput').value.toLowerCase();
+            const selectedType = document.getElementById('modelTypeSelect').value;
+
+            const filtered = mockAssets.filter(a => {
+                const matchesQuery = a.name.toLowerCase().includes(query);
+                const matchesExclude = exclude ? !a.name.toLowerCase().includes(exclude) : true;
+                const matchesType = selectedType === 'all' ? true : a.type === selectedType;
+                return matchesQuery && matchesExclude && matchesType;
+            });
+
+            renderAssetCards(filtered);
+        }
+
+        function clearSearchFilters() {
+            document.getElementById('assetSearchInput').value = '';
+            document.getElementById('excludeInput').value = '';
+            document.getElementById('modelTypeSelect').value = 'all';
+            filterAssets();
+        }
+
+        // Switch Main View Tabs
+        function switchTab(tab) {
+            document.getElementById('tabHome').classList.add('hidden');
+            document.getElementById('tabLibrary').classList.add('hidden');
+            document.getElementById('navHome').className = "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all text-gray-400 hover:text-white hover:bg-ap-card/60";
+            document.getElementById('navLibrary').className = "w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-gray-400 hover:text-white hover:bg-ap-card/60 transition-all mb-2";
+
+            if (tab === 'home') {
+                document.getElementById('tabHome').classList.remove('hidden');
+                document.getElementById('navHome').className = "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all bg-ap-card text-ap-cyan border border-ap-cyan/30 shadow-sm";
+            } else {
+                document.getElementById('tabLibrary').classList.remove('hidden');
+                document.getElementById('navLibrary').className = "w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-semibold bg-ap-card text-ap-cyan border border-ap-cyan/30 transition-all mb-2 shadow-sm";
+            }
+        }
+
+        // Inspector & 3D Preview
+        function inspectAsset(name) {
+            document.getElementById('inspectorPanel').classList.remove('hidden');
+            document.getElementById('inspectTitle').innerText = name;
+            document.getElementById('inspectPath').innerText = `AION2/Content/Assets/${name}.uasset`;
+            if (currentMesh) {
+                currentMesh.rotation.x += 0.5;
+                currentMesh.rotation.y += 0.5;
+            }
+        }
+
+        function toggleInspector(show) {
+            if (!show) document.getElementById('inspectorPanel').classList.add('hidden');
+        }
+
+        // Three.js Viewport
+        function initThreeJS() {
+            const container = document.getElementById('threeCanvasContainer');
+            if (!container) return;
+
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            const geometry = new THREE.OctahedronGeometry(1.5, 0);
+            const material = new THREE.MeshBasicMaterial({ color: 0x00f2fe, wireframe: true });
+            currentMesh = new THREE.Mesh(geometry, material);
+            scene.add(currentMesh);
+
+            camera.position.z = 4;
+
+            function animate() {
+                requestAnimationFrame(animate);
+                if (currentMesh) {
+                    currentMesh.rotation.y += 0.01;
+                }
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+
+        // Queue Operations
+        function addCurrentToQueue() {
+            activeQueue.push("SelectedAsset");
+            document.getElementById('queueStatusText').innerText = `${activeQueue.length} item(s) na fila de exportação`;
+        }
+
+        function addSelectedToQueue() {
+            addCurrentToQueue();
+        }
+
+        function previewSelected() {
+            inspectAsset("SM_BeritraC_09_Skill02_Axe_000");
+        }
+
+        function copySelectedPath() {
+            console.log("Caminho copiado!");
+        }
+
+        function exportToBlender() {
+            alert("Iniciando transferência para o Blender...");
+        }
+
+        // Options Modal Handlers
+        function openOptionsModal() {
+            document.getElementById('optionsModal').classList.remove('hidden');
+        }
+
+        function closeOptionsModal() {
+            document.getElementById('optionsModal').classList.add('hidden');
+        }
+
+        function browsePath(inputId) {
+            const input = document.getElementById(inputId);
+            alert(`Selecionar diretório para: ${input.value}`);
+        }
+
+        function saveOptions() {
+            closeOptionsModal();
+        }
+
+        function refreshCatalog() {
+            const icon = document.getElementById('refreshIcon');
+            icon.classList.add('animate-spin');
+            setTimeout(() => icon.classList.remove('animate-spin'), 1000);
+        }
+
+        function openFolder(type) {
+            console.log("Opening folder context:", type);
+        }
+
+        // Multi-Language Toggle
+        function changeLanguage(lang) {
+            if (lang === 'en-US') {
+                document.getElementById('lblSubTitle').innerText = "Explore, select, and export your assets directly to Blender";
+                document.getElementById('lblBtnRefreshCat').innerText = "Refresh catalog";
+                document.getElementById('lblBtnExportDir').innerText = "Export path...";
+                document.getElementById('lblBtnOptions').innerText = "Options";
+                document.getElementById('lblSecGeneral').innerText = "General";
+                document.getElementById('lblNavHome').innerText = "Home";
+                document.getElementById('lblSecExport').innerText = "Export";
+                document.getElementById('lblNavLibrary').innerText = "Asset Library";
+            } else {
+                document.getElementById('lblSubTitle').innerText = "Explore, selecione e leve seus assets para o Blender";
+                document.getElementById('lblBtnRefreshCat').innerText = "Atualizar catálogo";
+                document.getElementById('lblBtnExportDir').innerText = "Pasta de saída...";
+                document.getElementById('lblBtnOptions').innerText = "Opções";
+                document.getElementById('lblSecGeneral').innerText = "Geral";
+                document.getElementById('lblNavHome').innerText = "Início";
+                document.getElementById('lblSecExport').innerText = "Exportar";
+                document.getElementById('lblNavLibrary').innerText = "Biblioteca";
+            }
+        }
+    </script>
+</body>
+</html>

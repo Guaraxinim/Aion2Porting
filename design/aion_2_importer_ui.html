@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark h-full select-none">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AION 2 / IMPORTER v4.0</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        ap: {
+                            bg: '#080a12',
+                            sidebar: '#0d101d',
+                            panel: '#121627',
+                            card: '#181d33',
+                            hover: '#222845',
+                            border: '#282f52',
+                            cyan: '#00f2fe',
+                            cyanGlow: '#4facfe',
+                            purple: '#9d4edd',
+                            purpleGlow: '#c77dff',
+                            textMuted: '#8a94b8'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Three.js for 3D Preview -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(13, 16, 29, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #282f52;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00f2fe;
+        }
+
+        .glow-cyan {
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.25);
+        }
+        .glow-cyan-hover:hover {
+            box-shadow: 0 0 25px rgba(0, 242, 254, 0.45);
+        }
+        
+        .rarity-mythic { background: linear-gradient(135deg, #ffaa00 0%, #ff5500 100%); }
+        .rarity-legendary { background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); }
+        .rarity-epic { background: linear-gradient(135deg, #9d4edd 0%, #c77dff 100%); }
+        .rarity-rare { background: linear-gradient(135deg, #0072ff 0%, #00c6ff 100%); }
+
+        .asset-card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .asset-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 28px -5px rgba(0, 0, 0, 0.6), 0 0 18px rgba(0, 242, 254, 0.25);
+        }
+    </style>
+</head>
+<body class="bg-ap-bg text-gray-200 font-sans h-full flex overflow-hidden select-none">
+
+    <!-- 1. NAVIGATION SIDEBAR -->
+    <aside class="w-60 bg-ap-sidebar border-r border-ap-border/60 flex flex-col justify-between flex-shrink-0 z-20">
+        <div class="p-4 space-y-6">
+            
+            <!-- AION 2 IMPORTER Logo -->
+            <div class="flex items-center gap-3">
+                <div class="relative group cursor-pointer">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-ap-cyan via-blue-600 to-ap-purple flex items-center justify-center font-extrabold text-white text-xl shadow-lg glow-cyan group-hover:scale-105 transition duration-300">
+                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                    </div>
+                    <span class="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-ap-sidebar rounded-full"></span>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-base tracking-wide text-white flex items-center gap-1 leading-none">
+                        AION 2 <span class="text-ap-cyan">IMPORTER</span>
+                    </h1>
+                    <span class="text-[10px] text-ap-textMuted font-mono font-semibold tracking-wider">v4.0 • OFFICIAL TOOL</span>
+                </div>
+            </div>
+
+            <!-- GERAL SECTION -->
+            <div class="space-y-1">
+                <span class="px-3 text-[10px] font-bold text-ap-textMuted uppercase tracking-wider">Geral</span>
+                <button id="navBtnHome" onclick="switchMainTab('home')" class="w-full px-3 py-2 rounded-xl flex items-center gap-3 text-xs font-semibold bg-ap-cyan/15 text-ap-cyan border border-ap-cyan/30 transition">
+                    <i data-lucide="home" class="w-4 h-4"></i>
+                    Início
+                </button>
+                <button onclick="refreshCatalog()" class="w-full px-3 py-2 rounded-xl flex items-center gap-3 text-xs font-semibold text-gray-400 hover:bg-ap-hover hover:text-white transition">
+                    <i data-lucide="rotate-cw" class="w-4 h-4 text-ap-textMuted"></i>
+                    Atualizar Catálogo
+                </button>
+            </div>
+
+            <!-- EXPORTAR SECTION (BIBLIOTECA CATEGORIES) -->
+            <div class="space-y-1">
+                <div class="flex items-center justify-between px-3">
+                    <span class="text-[10px] font-bold text-ap-textMuted uppercase tracking-wider">Exportar</span>
+                    <span class="text-[10px] font-mono text-ap-cyan">598.534</span>
+                </div>
+                
+                <button id="navBtnLibrary" onclick="switchMainTab('library')" class="w-full px-3 py-2 rounded-xl flex items-center gap-3 text-xs font-semibold text-gray-400 hover:bg-ap-hover hover:text-white transition">
+                    <i data-lucide="folder-kanban" class="w-4 h-4 text-ap-textMuted"></i>
+                    Biblioteca Total
+                </button>
+
+                <!-- Sub-categories accordion list -->
+                <div class="pt-1 space-y-0.5 overflow-y-auto max-h-52 pr-1" id="categoriesSidebarList">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- CONFIGURAÇÕES SECTION -->
+            <div class="space-y-1">
+                <span class="px-3 text-[10px] font-bold text-ap-textMuted uppercase tracking-wider">Configurações</span>
+                <button onclick="openOptionsModal()" class="w-full px-3 py-2 rounded-xl flex items-center gap-3 text-xs font-semibold text-gray-400 hover:bg-ap-hover hover:text-white transition">
+                    <i data-lucide="sliders" class="w-4 h-4 text-ap-textMuted"></i>
+                    Opções
+                </button>
+                <button onclick="openExportFolder()" class="w-full px-3 py-2 rounded-xl flex items-center gap-3 text-xs font-semibold text-gray-400 hover:bg-ap-hover hover:text-white transition">
+                    <i data-lucide="folder-output" class="w-4 h-4 text-ap-textMuted"></i>
+                    Abrir Exportados
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Footer Info -->
+        <div class="p-3 border-t border-ap-border/60 bg-ap-panel/50 text-[10px] text-ap-textMuted font-mono text-center">
+            Catálogo: 08/10 21:00 • Pronto
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT VIEW AREA -->
+    <div class="flex-1 flex flex-col min-w-0 bg-ap-bg relative">
+
+        <!-- TAB 1: INÍCIO (NOTÍCIAS & UPDATES) -->
+        <div id="tabHome" class="flex-1 overflow-y-auto p-6 space-y-6">
+            <div class="bg-gradient-to-r from-ap-panel via-ap-card to-ap-panel border border-ap-border rounded-2xl p-6 relative overflow-hidden">
+                <div class="max-w-xl space-y-3 z-10 relative">
+                    <span class="px-2.5 py-1 bg-ap-cyan/20 border border-ap-cyan/40 text-ap-cyan text-[10px] font-mono font-bold rounded-lg uppercase tracking-wider">Atualização v4.0.2</span>
+                    <h2 class="text-2xl font-extrabold text-white tracking-tight">AION 2 / IMPORTER</h2>
+                    <p class="text-xs text-ap-textMuted leading-relaxed">
+                        Explore, filtre e extraia pacotes de modelos 3D, texturas, animações e efeitos diretamente para o Blender com suporte nativo aos arquivos de Aion 2.
+                    </p>
+                    <div class="pt-2 flex gap-3">
+                        <button onclick="switchMainTab('library')" class="px-4 py-2 bg-ap-cyan hover:bg-ap-cyanGlow text-black font-bold text-xs rounded-xl transition flex items-center gap-2">
+                            <i data-lucide="box" class="w-4 h-4"></i>
+                            Explorar Biblioteca (598.534)
+                        </button>
+                        <button onclick="openOptionsModal()" class="px-4 py-2 bg-ap-card hover:bg-ap-hover border border-ap-border text-white text-xs font-bold rounded-xl transition">
+                            Configurar Diretórios
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <i data-lucide="newspaper" class="w-4 h-4 text-ap-cyan"></i>
+                    Novidades e Changelog
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-ap-panel border border-ap-border/80 rounded-2xl p-4 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-white">Suporte Completo a Shaders Aion 2</span>
+                            <span class="text-[10px] font-mono text-ap-textMuted">Hoje</span>
+                        </div>
+                        <p class="text-xs text-ap-textMuted">Melhorada a conversão automática de materiais para o Shader Editor do Blender 4.x.</p>
+                    </div>
+                    <div class="bg-ap-panel border border-ap-border/80 rounded-2xl p-4 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-white">Filtro Inteligente de 'Modelo Provável'</span>
+                            <span class="text-[10px] font-mono text-ap-textMuted">Ontem</span>
+                        </div>
+                        <p class="text-xs text-ap-textMuted">Classificação aprimorada para esqueleotose malhas sem tag definida nos arquivos do jogo.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: BIBLIOTECA (EXPLORER & GRID DE ASSETS) -->
+        <main id="tabLibrary" class="hidden flex-1 flex flex-col min-w-0 bg-ap-bg relative">
+            
+            <!-- TOP BAR SEARCH & DETAILED FILTERS -->
+            <header class="p-3 bg-ap-panel border-b border-ap-border/60 flex flex-col gap-2 z-10">
+                
+                <!-- Row 1: Search mode, query input & Clear -->
+                <div class="flex items-center gap-2">
+                    <select id="searchTypeSelect" class="bg-ap-card border border-ap-border text-xs text-white rounded-xl px-3 py-2 font-medium focus:outline-none focus:border-ap-cyan">
+                        <option value="pathWords">Palavras no caminho</option>
+                        <option value="exactPath">Caminho exato</option>
+                        <option value="assetName">Apenas nome do Asset</option>
+                    </select>
+
+                    <div class="relative flex-1">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-ap-textMuted"></i>
+                        <input id="assetSearchInput" type="text" placeholder="Busca por nome ou caminho • Ctrl/clique e Shift selecionam vários itens" 
+                            class="w-full bg-ap-bg border border-ap-border rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-ap-textMuted focus:outline-none focus:border-ap-cyan transition">
+                    </div>
+
+                    <button onclick="clearSearchFilters()" class="px-4 py-2 bg-ap-card hover:bg-ap-hover border border-ap-border text-xs font-bold text-gray-300 hover:text-white rounded-xl transition">
+                        Limpar
+                    </button>
+                </div>
+
+                <!-- Row 2: Subcategories, Model Types & Chunks -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <select id="subCatSelect" class="bg-ap-card border border-ap-border text-xs text-white rounded-xl px-3 py-1.5 focus:outline-none focus:border-ap-cyan">
+                        <option value="all">Todas as subcategorias</option>
+                        <option value="character">Personagens & Daevas</option>
+                        <option value="weapons">Armas e Escudos</option>
+                        <option value="effects">Efeitos & Magias</option>
+                        <option value="environment">Cenários e Objetos</option>
+                    </select>
+
+                    <select id="modelTypeSelect" class="bg-ap-card border border-ap-border text-xs text-ap-cyan font-semibold rounded-xl px-3 py-1.5 focus:outline-none focus:border-ap-cyan">
+                        <option value="all">Todos os tipos</option>
+                        <option value="animation">Animação (nome)</option>
+                        <option value="control">Controle (nome)</option>
+                        <option value="skeleton">Esqueleto (nome)</option>
+                        <option value="material">Material (nome)</option>
+                        <option value="available">Modelo disponível</option>
+                        <option value="probable" selected>Modelo provável</option>
+                        <option value="unclassified">Não classificado</option>
+                        <option value="texture">Textura (nome)</option>
+                    </select>
+
+                    <select id="chunkSelect" class="bg-ap-card border border-ap-border text-xs text-white rounded-xl px-3 py-1.5 focus:outline-none focus:border-ap-cyan">
+                        <option value="all">Todos os chunks</option>
+                        <option value="chunk0">Chunk 00 (Core)</option>
+                        <option value="chunk1">Chunk 01 (Maps)</option>
+                    </select>
+
+                    <div class="flex items-center gap-1.5 bg-ap-bg border border-ap-border rounded-xl px-2 py-1 flex-1 min-w-[180px]">
+                        <span class="text-[10px] text-ap-textMuted font-bold uppercase">Excluir:</span>
+                        <input id="excludeInput" type="text" placeholder="palavras-chave..." class="bg-transparent text-xs text-white focus:outline-none w-full">
+                    </div>
+
+                    <label class="flex items-center gap-2 text-xs text-gray-300 cursor-pointer pl-1">
+                        <input type="checkbox" id="preferBaseType" class="rounded bg-ap-card border-ap-border text-ap-cyan focus:ring-0">
+                        <span>Preferir base aos Type</span>
+                    </label>
+                </div>
+            </header>
+
+            <!-- Quick Action Toolbar -->
+            <div class="px-4 py-2 bg-ap-sidebar border-b border-ap-border/40 flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <button onclick="addSelected()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-1.5">
+                        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                        + Adicionar selecionados
+                    </button>
+                    <button onclick="addResults()" class="px-3 py-1.5 bg-ap-card hover:bg-ap-hover border border-ap-border text-xs font-semibold text-gray-200 rounded-xl transition">
+                        Adicionar resultados
+                    </button>
+                    <button onclick="trigger3DView()" class="px-3 py-1.5 bg-ap-cyan/20 border border-ap-cyan/40 text-ap-cyan font-bold text-xs rounded-xl hover:bg-ap-cyan/30 transition flex items-center gap-1.5">
+                        <i data-lucide="box" class="w-3.5 h-3.5"></i>
+                        Visualizar 3D
+                    </button>
+                    <button onclick="copyPath()" class="px-3 py-1.5 bg-ap-card hover:bg-ap-hover border border-ap-border text-xs font-semibold text-gray-300 rounded-xl transition">
+                        Copiar caminho
+                    </button>
+                    <button onclick="toggleLibrary()" class="px-3 py-1.5 bg-ap-card hover:bg-ap-hover border border-ap-border text-xs font-semibold text-gray-300 rounded-xl transition">
+                        Ocultar biblioteca
+                    </button>
+                </div>
+                <span id="resultsCountBadge" class="text-xs font-mono text-ap-textMuted">1.217 resultados • Efeitos</span>
+            </div>
+
+            <!-- ASSETS VISUAL GRID VIEW -->
+            <div class="flex-1 overflow-y-auto p-4">
+                <div id="assetsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                    <!-- Cards populated via JS -->
+                </div>
+            </div>
+
+            <!-- FLOATING EXPORT BAR -->
+            <div class="p-3 bg-ap-panel border-t border-ap-border/80 flex items-center justify-between">
+                <div class="text-xs text-ap-textMuted font-mono truncate max-w-lg" id="selectedAssetFooterInfo">
+                    SM_BeritraC_09_Skill02_Axe_000 • Modelo disponível • confirmação salva no cache
+                </div>
+                <button onclick="exportToBlender()" class="px-6 py-2.5 bg-gradient-to-r from-ap-cyan via-blue-600 to-ap-purple hover:opacity-95 text-black font-extrabold text-xs rounded-xl shadow-lg glow-cyan transition flex items-center gap-2">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    Exportar para Blender
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- 3. RIGHT INSPECTOR & PREVIEW 3D PANEL -->
+    <aside id="inspectorPanel" class="w-80 bg-ap-panel border-l border-ap-border/60 flex flex-col justify-between flex-shrink-0 z-10">
+        
+        <!-- Inspector Header -->
+        <div class="p-4 border-b border-ap-border/60 flex items-center justify-between">
+            <div>
+                <span class="text-[10px] font-mono uppercase font-bold text-ap-cyan">PRÉVIA 3D</span>
+                <h2 id="inspectorTitle" class="text-sm font-extrabold text-white truncate max-w-[180px]">
+                    SM_BeritraC_09_Axe_000
+                </h2>
+            </div>
+            <button onclick="resetCamera3D()" class="px-2.5 py-1 bg-ap-card hover:bg-ap-hover border border-ap-border rounded-lg text-[10px] font-bold text-gray-300 transition">
+                Fechar 3D
+            </button>
+        </div>
+
+        <!-- 3D Controls Bar -->
+        <div class="px-3 py-2 bg-ap-sidebar border-b border-ap-border/40 flex items-center justify-between gap-1">
+            <button onclick="resetCamera3D()" class="flex-1 py-1 bg-ap-card hover:bg-ap-hover border border-ap-border rounded-lg text-[11px] font-semibold text-gray-200 transition">
+                Enquadrar
+            </button>
+            <button onclick="setCameraView('front')" class="flex-1 py-1 bg-ap-card hover:bg-ap-hover border border-ap-border rounded-lg text-[11px] font-semibold text-gray-200 transition">
+                Frente
+            </button>
+            <button onclick="setCameraView('side')" class="flex-1 py-1 bg-ap-card hover:bg-ap-hover border border-ap-border rounded-lg text-[11px] font-semibold text-gray-200 transition">
+                Lado
+            </button>
+        </div>
+
+        <!-- 3D Canvas Viewport -->
+        <div class="p-3 flex-1 flex flex-col space-y-3 overflow-y-auto">
+            
+            <div class="w-full h-64 bg-ap-bg border border-ap-border rounded-2xl relative overflow-hidden group shadow-inner" id="inspectorCanvasContainer">
+                <div class="absolute top-2 left-2 z-10">
+                    <label class="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg text-[10px] font-mono text-gray-200 cursor-pointer border border-white/10">
+                        <input type="checkbox" id="rawTextureToggle" checked onchange="toggleRawTexture()" class="rounded bg-ap-card border-ap-border text-ap-cyan focus:ring-0">
+                        <span>Textura base (bruta)</span>
+                    </label>
+                </div>
+                
+                <div class="absolute bottom-2 left-2 right-2 z-10 text-[9px] font-mono text-gray-400 bg-black/50 backdrop-blur-md px-2 py-1 rounded text-center">
+                    Arraste: girar • Botão direito: mover • Roda: zoom
+                </div>
+            </div>
+
+            <!-- Model Stats Info -->
+            <div class="bg-ap-card/70 border border-ap-border/60 rounded-xl p-3 space-y-1.5 text-xs font-mono">
+                <div class="text-ap-cyan font-bold text-[11px] border-b border-ap-border/40 pb-1">
+                    580 vértices • 874 triângulos • 1 partes • 0 com textura
+                </div>
+                <p class="text-[10px] text-ap-textMuted leading-snug">
+                    Pose de referência • Cor base opaca • Shaders do jogo não reproduzidos.
+                </p>
+                <p class="text-[10px] text-ap-textMuted leading-snug">
+                    Algumas partes usam cor neutra por falta de textura base.
+                </p>
+            </div>
+        </div>
+
+        <!-- Add to Queue Action -->
+        <div class="p-3 bg-ap-card/40 border-t border-ap-border/60 space-y-2">
+            <button onclick="addToQueue()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-2">
+                <i data-lucide="list-plus" class="w-4 h-4"></i>
+                Adicionar à fila
+            </button>
+            <div class="text-[10px] text-center text-ap-textMuted">
+                Visualizar não inicia a importação no Blender.
+            </div>
+        </div>
+    </aside>
+
+    <!-- 4. OPTIONS MODAL -->
+    <div id="optionsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-ap-panel border border-ap-border rounded-2xl w-full max-w-lg p-6 space-y-5 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-ap-border/60 pb-3">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-4 h-4 text-ap-cyan"></i>
+                    Opções de Configuração
+                </h3>
+                <button onclick="closeOptionsModal()" class="text-ap-textMuted hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <!-- Game Path -->
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-gray-300">Caminho do Jogo (AION 2):</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="gamePathInput" value="C:\Program Files\NCSoft\AION2" class="flex-1 bg-ap-bg border border-ap-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-ap-cyan">
+                        <button onclick="browseFolder('game')" class="px-3 py-2 bg-ap-card hover:bg-ap-hover border border-ap-border rounded-xl text-xs font-bold text-gray-200">
+                            Procurar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Blender Path -->
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-gray-300">Caminho do Executável do Blender:</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="blenderPathInput" value="C:\Program Files\Blender Foundation\Blender 4.1\blender.exe" class="flex-1 bg-ap-bg border border-ap-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-ap-cyan">
+                        <button onclick="browseFolder('blender')" class="px-3 py-2 bg-ap-card hover:bg-ap-hover border border-ap-border rounded-xl text-xs font-bold text-gray-200">
+                            Procurar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Export Output Path -->
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-gray-300">Pasta de Saída das Exportações:</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="outputPathInput" value="E:\Download\Aion2Porting\Exportados" class="flex-1 bg-ap-bg border border-ap-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-ap-cyan">
+                        <button onclick="browseFolder('output')" class="px-3 py-2 bg-ap-card hover:bg-ap-hover border border-ap-border rounded-xl text-xs font-bold text-gray-200">
+                            Procurar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-ap-border/60">
+                <button onclick="closeOptionsModal()" class="px-4 py-2 bg-ap-card hover:bg-ap-hover border border-ap-border rounded-xl text-xs font-bold text-gray-300">
+                    Cancelar
+                </button>
+                <button onclick="saveOptions()" class="px-5 py-2 bg-ap-cyan hover:bg-ap-cyanGlow text-black font-extrabold text-xs rounded-xl shadow transition">
+                    Salvar Alterações
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="apToast" class="fixed top-5 right-5 bg-ap-card border border-ap-cyan text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-2xl transform -translate-y-12 opacity-0 transition-all duration-300 z-50 flex items-center gap-3 pointer-events-none">
+        <div class="w-2 h-2 rounded-full bg-ap-cyan animate-ping"></div>
+        <span id="apToastMsg">Notificação AION 2</span>
+    </div>
+
+    <script>
+        const categoriesData = [
+            { name: "Áudio", count: "68.078", icon: "volume-2" },
+            { name: "Cenários e objetos", count: "103.491", icon: "box" },
+            { name: "Cinemáticas", count: "7.050", icon: "clapperboard" },
+            { name: "Efeitos", count: "106.496", icon: "sparkles" },
+            { name: "Interface", count: "17.704", icon: "layout" },
+            { name: "Jogadores", count: "46.596", icon: "users" },
+            { name: "Mapas", count: "112.553", icon: "map" },
+            { name: "Monstros", count: "30.959", icon: "skull" },
+            { name: "NPCs", count: "7.777", icon: "bot" },
+            { name: "Outros personagens", count: "19.762", icon: "user-check" },
+            { name: "Outros recursos", count: "78.067", icon: "layers" },
+            { name: "Pets", count: "1", icon: "dog" }
+        ];
+
+        const mockAssets = [
+            { id: 1, name: "SM_BeritraC_09_Skill02_Axe_000", cat: "Efeitos", type: "Modelo provável", size: "57,2 KB", rarity: "mythic", img: "https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=300&q=80" },
+            { id: 2, name: "SM_Seq_1271_C01_004", cat: "Cinemáticas", type: "Modelo provável", size: "10,3 KB", rarity: "legendary", img: "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=300&q=80" },
+            { id: 3, name: "SM_Seq_1275_C01_001_FBX", cat: "Cinemáticas", type: "Modelo provável", size: "19,1 KB", rarity: "epic", img: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=300&q=80" },
+            { id: 4, name: "SM_BasfeltWaterfall_Cast_003_Optimize", cat: "Cenários e objetos", type: "Modelo provável", size: "48,5 KB", rarity: "rare", img: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=300&q=80" },
+            { id: 5, name: "SM_GraveUn_02_skill_02_shield_000", cat: "Efeitos", type: "Modelo disponível", size: "57,2 KB", rarity: "mythic", img: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=300&q=80" },
+            { id: 6, name: "AM_Asmodian_Wing_Tier4_Mesh", cat: "Jogadores", type: "Modelo disponível", size: "142,0 KB", rarity: "legendary", img: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&w=300&q=80" }
+        ];
+
+        let activeTab = 'home';
+        let selectedCategory = 'Efeitos';
+        let selectedAsset = mockAssets[0];
+
+        window.addEventListener('load', () => {
+            renderSidebarCategories();
+            renderAssetsGrid();
+            init3DViewer();
+            lucide.createIcons();
+        });
+
+        function switchMainTab(tab) {
+            activeTab = tab;
+            const homeView = document.getElementById('tabHome');
+            const libraryView = document.getElementById('tabLibrary');
+            const navHome = document.getElementById('navBtnHome');
+            const navLib = document.getElementById('navBtnLibrary');
+
+            if (tab === 'home') {
+                homeView.classList.remove('hidden');
+                libraryView.classList.add('hidden');
+                navHome.className = "w-full px-3 py-2 rounded-xl flex items-center gap-3 text-xs font-semibold bg-ap-cyan/15 text-ap-cyan border border-ap-cyan/30 transition";
+                navLib.className = "w-full px-3 py-2 rounded-xl flex items-center gap-3 text-xs font-semibold text-gray-400 hover:bg-ap-hover hover:text-white transition";
+            } else {
+                homeView.classList.add('hidden');
+                libraryView.classList.remove('hidden');
+                navLib.className = "w-full px-3 py-2 rounded-xl flex items-center gap-3 text-xs font-semibold bg-ap-cyan/15 text-ap-cyan border border-ap-cyan/30 transition";
+                navHome.className = "w-full px-3 py-2 rounded-xl flex items-center gap-3 text-xs font-semibold text-gray-400 hover:bg-ap-hover hover:text-white transition";
+            }
+        }
+
+        function renderSidebarCategories() {
+            const container = document.getElementById('categoriesSidebarList');
+            container.innerHTML = categoriesData.map(cat => {
+                const isActive = cat.name === selectedCategory;
+                return `
+                    <button onclick="selectCategory('${cat.name}')" class="w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between text-[11px] transition ${isActive ? 'bg-ap-card text-ap-cyan border border-ap-cyan/30 font-bold' : 'text-gray-400 hover:bg-ap-hover hover:text-white'}">
+                        <div class="flex items-center gap-2 truncate">
+                            <i data-lucide="${cat.icon}" class="w-3.5 h-3.5 ${isActive ? 'text-ap-cyan' : 'text-ap-textMuted'}"></i>
+                            <span class="truncate">${cat.name}</span>
+                        </div>
+                        <span class="text-[9px] font-mono text-ap-textMuted">${cat.count}</span>
+                    </button>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function selectCategory(name) {
+            selectedCategory = name;
+            renderSidebarCategories();
+            switchMainTab('library');
+            renderAssetsGrid();
+        }
+
+        function renderAssetsGrid() {
+            const grid = document.getElementById('assetsGrid');
+            const query = document.getElementById('assetSearchInput').value.toLowerCase();
+            const exclude = document.getElementById('excludeInput').value.toLowerCase();
+
+            const filtered = mockAssets.filter(item => {
+                const matchName = item.name.toLowerCase().includes(query);
+                const notExcluded = exclude ? !item.name.toLowerCase().includes(exclude) : true;
+                return matchName && notExcluded;
+            });
+
+            document.getElementById('resultsCountBadge').innerText = `${filtered.length} resultados • ${selectedCategory}`;
+
+            grid.innerHTML = filtered.map(item => {
+                const isSelected = selectedAsset.id === item.id;
+                return `
+                    <div onclick="inspectAsset(${item.id})" class="asset-card aspect-[3/4] bg-ap-card border ${isSelected ? 'border-ap-cyan ring-2 ring-ap-cyan/40 scale-105' : 'border-ap-border/80'} rounded-2xl overflow-hidden relative cursor-pointer flex flex-col justify-between group">
+                        <div class="h-1.5 w-full rarity-${item.rarity}"></div>
+                        <div class="flex-1 w-full relative overflow-hidden bg-ap-bg/40">
+                            <img src="${item.img}" alt="${item.name}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
+                            <div class="absolute inset-0 bg-gradient-to-t from-ap-card via-transparent to-transparent opacity-90"></div>
+                        </div>
+                        <div class="p-2 bg-ap-card border-t border-ap-border/40 z-10 space-y-0.5">
+                            <h4 class="text-[11px] font-bold text-white truncate leading-snug">${item.name}</h4>
+                            <div class="flex items-center justify-between text-[9px] font-mono text-ap-textMuted">
+                                <span>${item.type}</span>
+                                <span>${item.size}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function inspectAsset(id) {
+            selectedAsset = mockAssets.find(a => a.id === id) || mockAssets[0];
+            renderAssetsGrid();
+            document.getElementById('inspectorTitle').innerText = selectedAsset.name;
+            document.getElementById('selectedAssetFooterInfo').innerText = `${selectedAsset.name} • ${selectedAsset.type} • confirmação salva no cache`;
+        }
+
+        let scene, camera, renderer, mesh;
+
+        function init3DViewer() {
+            const container = document.getElementById('inspectorCanvasContainer');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x080a12);
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 0, 3.5);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0x00f2fe, 1.5);
+            dirLight.position.set(5, 5, 5);
+            scene.add(dirLight);
+
+            const geometry = new THREE.ConeGeometry(0.8, 2, 8);
+            const material = new THREE.MeshStandardMaterial({ color: 0x00f2fe, wireframe: false });
+            mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+
+            function animate() {
+                requestAnimationFrame(animate);
+                if (mesh) mesh.rotation.y += 0.01;
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+
+        function resetCamera3D() { camera.position.set(0, 0, 3.5); }
+        function setCameraView(view) {
+            if (view === 'front') camera.position.set(0, 0, 3.5);
+            if (view === 'side') camera.position.set(3.5, 0, 0);
+        }
+        function toggleRawTexture() {
+            if (mesh) mesh.material.wireframe = !document.getElementById('rawTextureToggle').checked;
+        }
+
+        function openOptionsModal() { document.getElementById('optionsModal').classList.remove('hidden'); }
+        function closeOptionsModal() { document.getElementById('optionsModal').classList.add('hidden'); }
+        function saveOptions() {
+            showToast('Configurações salvas com sucesso!');
+            closeOptionsModal();
+        }
+        function openExportFolder() { showToast('Abrindo pasta de exportação: E:\\Download\\Aion2Porting\\Exportados'); }
+        function refreshCatalog() { showToast('Catálogo recarregado com 598.534 pacotes.'); }
+        function clearSearchFilters() {
+            document.getElementById('assetSearchInput').value = '';
+            document.getElementById('excludeInput').value = '';
+            renderAssetsGrid();
+        }
+        function exportToBlender() { showToast(`Exportando ${selectedAsset.name} para o Blender...`); }
+        function addToQueue() { showToast(`Asset adicionado à fila de exportação!`); }
+        function addSelected() { showToast('Itens selecionados adicionados.'); }
+        function addResults() { showToast('Todos os resultados foram adicionados.'); }
+        function trigger3DView() { showToast('Regenerando visualização 3D...'); }
+        function copyPath() { showToast('Caminho do asset copiado para a área de transferência.'); }
+        function toggleLibrary() { showToast('A biblioteca foi minimizada.'); }
+        function browseFolder(type) { showToast(`Procurando diretório para ${type}...`); }
+
+        function showToast(msg) {
+            const toast = document.getElementById('apToast');
+            document.getElementById('apToastMsg').innerText = msg;
+            toast.classList.remove('opacity-0', '-translate-y-12');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', '-translate-y-12');
+            }, 3000);
+        }
+
+        document.getElementById('assetSearchInput').addEventListener('input', renderAssetsGrid);
+        document.getElementById('excludeInput').addEventListener('input', renderAssetsGrid);
+    </script>
+</body>
+</html>
