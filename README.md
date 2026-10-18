@@ -1,8 +1,8 @@
 # Aion2 Porting
 
-Aplicativo Windows WPF para pesquisar assets locais do Aion 2, visualizar modelos, texturas e animacoes, reproduzir audio reconhecido e exportar para Blender.
+Aplicativo para pesquisar assets locais do Aion 2, visualizar modelos, texturas e animacoes, reproduzir audio reconhecido e exportar para Blender.
 
-Versao atual: **0.7.21**. React/Tauri nao e a interface ativa.
+Versao atual: **0.7.21**.
 
 ## Executar
 
@@ -18,8 +18,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-desktop.ps1
 ```
 
 O bootstrap prepara o SDK .NET 10.0.401 e o CUE4Parse do commit `3222101ce839c5477df33a1aacf236fe9d130f64`. As fontes CUE4Parse presentes neste repositorio contem ajustes locais; preserve-as. O bootstrap nao substitui uma pasta existente.
-
-Para leitura do jogo, forneca localmente `mappings/AION2-5.3.2.0-1.0.52.0.usmap`, `tools/CUE4Parse-Natives.dll`, `tools/oodle-data-shared.dll` e `tools/vgmstream/vgmstream-cli.exe` com suas dependencias. Esses arquivos nao sao enviados ao GitHub. Blender deve estar instalado para gerar BLEND.
 
 ## Verificar
 
